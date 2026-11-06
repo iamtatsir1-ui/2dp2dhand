@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>不用進位直式加法練習 (iPad 9 左右姆指正確順數版)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Noto+Sans+HK:wght@500;700;900&display=swap');
+    
+    body {
+      font-family: 'Fredoka', 'Noto Sans HK', sans-serif;
+      background: linear-gradient(135deg, #e0f2fe 0%, #fef3c7 100%);
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .digit-font {
+      font-family: 'Fredoka', sans-serif;
+    }
+    /* Keyframe shake animation for prompt feedback */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .shake {
+      animation: shake 0.4s ease-in-out;
+    }
+    /* Input Box Focus Highlights */
+    .input-box {
+      transition: all 0.2s ease;
+    }
+    .input-box.active {
+      border-color: #0284c7;
+      box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.3);
+      transform: scale(1.03);
+    }
+    /* Formula digit click hint style */
+    .digit-clickable {
+      cursor: pointer;
+      transition: transform 0.15s ease, background-color 0.15s ease;
+      border-radius: 0.75rem;
+    }
+    .digit-clickable:hover, .digit-clickable:active {
+      background-color: #fef08a;
+      transform: scale(1.1);
+    }
+    /* Hand tap pulse animation */
+    @keyframes pulse-tap {
+      0% { transform: scale(1); }
+      50% { transform: scale(0.94); }
+      100% { transform: scale(1); }
+    }
+    .tap-animate {
+      animation: pulse-tap 0.18s ease-in-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-3 sm:p-5 min-w-[320px]">
+  
+  <!-- Header Section -->
+  <header class="w-full max-w-6xl mx-auto flex justify-between items-center mb-3">
+    <div class="flex items-center space-x-3">
+      <span class="text-3xl sm:text-4xl">✏️</span>
+      <div>
+        <h1 class="text-xl sm:text-2xl font-black text-sky-900 tracking-wide">不用進位直式加法</h1>
+        <p class="text-xs text-sky-700 font-bold hidden sm:block">點擊直式上的數字，開啟右側手勢順數小助手！</p>
+      </div>
+    </div>
+    <!-- Score Badge -->
+    <div class="bg-white/95 backdrop-blur border-2 border-amber-300 px-4 py-1.5 rounded-full shadow-md flex items-center space-x-2">
+      <span class="text-amber-500 text-xl">⭐</span>
+      <span class="text-sky-900 font-extrabold text-base sm:text-lg" id="score-count">答對: 0</span>
+    </div>
+  </header>
+
+  <!-- Main Activity Container (iPad 9 4:3 Ratio Two-Column Layout) -->
+  <main class="w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6 my-auto items-stretch">
+    
+    <!-- LEFT COLUMN: Vertical Addition Formula & Input -->
+    <section class="md:col-span-6 bg-white rounded-3xl shadow-xl border-4 border-sky-200 p-5 flex flex-col items-center justify-between relative">
+      
+      <!-- Clickable Digit Guide Banner -->
+      <div class="w-full bg-amber-100/90 border border-amber-300 rounded-xl py-1.5 px-3 text-center text-xs sm:text-sm font-bold text-amber-900 mb-2 flex items-center justify-center space-x-1.5 shadow-sm">
+        <span class="animate-bounce">👆</span>
+        <span>提示：點擊直式數字可叫出右側手勢數數！</span>
+      </div>
+
+      <!-- Place Value Column Headers -->
+      <div class="w-full max-w-[280px] grid grid-cols-3 gap-2 text-center text-slate-400 font-extrabold text-sm sm:text-base mb-1">
+        <div></div>
+        <div class="bg-sky-100/80 text-sky-800 py-0.5 rounded-lg">十位</div>
+        <div class="bg-sky-100/80 text-sky-800 py-0.5 rounded-lg">個位</div>
+      </div>
+
+      <!-- Vertical Math Formula Box -->
+      <div class="w-full max-w-[280px] bg-sky-50/70 rounded-2xl p-4 border-2 border-sky-100 mb-4 shadow-inner">
+        <div class="grid grid-cols-3 gap-2 text-5xl sm:text-6xl font-bold text-gray-800 text-center tracking-wider items-center">
+          
+          <!-- Row 1: First Number -->
+          <div></div>
+          <div id="tens-1" onclick="handleDigitClick('tens', 1)" class="digit-font digit-clickable text-sky-900 py-1" title="點擊進行手勢數數">1</div>
+          <div id="units-1" onclick="handleDigitClick('units', 1)" class="digit-font digit-clickable text-sky-900 py-1" title="點擊進行手勢數數">3</div>
+          
+          <!-- Row 2: Plus Sign & Second Number -->
+          <div class="text-sky-500 font-black text-4xl text-right font-mono">+</div>
+          <div id="tens-2" onclick="handleDigitClick('tens', 2)" class="digit-font digit-clickable text-sky-900 py-1" title="點擊進行手勢數數">2</div>
+          <div id="units-2" onclick="handleDigitClick('units', 2)" class="digit-font digit-clickable text-sky-900 py-1" title="點擊進行手勢數數">2</div>
+        </div>
+
+        <!-- Horizontal Divider Line -->
+        <div class="w-full h-1.5 bg-gray-800 rounded-full my-3"></div>
+
+        <!-- Row 3: Answer Square Input Boxes -->
+        <div class="grid grid-cols-3 gap-2 items-center">
+          <div></div>
+          <!-- Tens Input Box -->
+          <div id="box-tens" onclick="selectBox('tens')" class="input-box bg-white border-4 border-gray-300 rounded-2xl h-16 sm:h-20 flex items-center justify-center text-4xl sm:text-5xl font-black text-sky-700 cursor-pointer select-none shadow-inner">
+            <span id="text-tens"></span>
+          </div>
+          <!-- Units Input Box -->
+          <div id="box-units" onclick="selectBox('units')" class="input-box active bg-white border-4 border-sky-400 rounded-2xl h-16 sm:h-20 flex items-center justify-center text-4xl sm:text-5xl font-black text-sky-700 cursor-pointer select-none shadow-inner">
+            <span id="text-units"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive On-Screen Numpad (0-9) -->
+      <div class="w-full bg-slate-50 rounded-2xl p-3 border-2 border-slate-200 mb-3">
+        <div class="text-xs font-bold text-slate-400 text-center mb-1.5">點擊數字盤輸入答案</div>
+        <div class="grid grid-cols-5 gap-2">
+          <button onclick="pressDigit(1)" class="h-11 sm:h-12 bg-white hover:bg-sky-100 active:bg-sky-200 text-sky-900 text-2xl font-bold rounded-xl shadow-md border-b-4 border-slate-200 active:border-b-0 active:translate-y-1 transition">1</button>
+          <button onclick="pressDigit(2)" class="h-11 sm:h-12 bg-white hover:bg-sky-100 active:bg-sky-200 text-sky-900 text-2xl font-bold rounded-xl shadow-md border-b-4 border-slate-200 active:border-b-0 active:translate-y-1 transition">2</button>
+          <button onclick="pressDigit(3)" class="h-11 sm:h-12 bg-white hover:bg-sky-100 active:bg-sky-200 text-sky-900 text-2xl font-bold rounded-xl shadow-md border-b-4 border-slate-200 active:border-b-0 active:translate-y-1 transition">3</button>
+          <button onclick="pressDigit(4)" class="h-11 sm:h-12 bg-white hover:bg-sky-100 active:bg-sky-200 text-sky-900 text-2xl font-bold rounded-xl shadow-md border-b-4 border-slate-200 active:border-b-0 active:translate-y-1 transition">4</button>
+          <button onclick="pressDigit(5)" class="h-11 sm:h-12 bg-white hover:bg-sky-100 active:bg-sky-200 text-sky-900 text-2xl font-bold rounded-xl shadow-md border-b-4 border-slate-200 active:border-b-0 active:translate-y-1 transition">5</button>
+          <button onclick="pressDigit(6)" class="h-11 sm:h-12 bg-white hover:bg-sky-100 active:bg-sky-200 text-sky-900 text-2xl font-bold rounded-xl shadow-md border-b-4 border-slate-200 active:border-b-0 active:translate-y-1 transition">6</button>
+          <button onclick="pressDigit(7)" class="h-11 sm:h-12 bg-white hover:bg-sky-100 active:bg-sky-200 text-sky-900 text-2xl font-bold rounded-xl shadow-md border-b-4 border-slate-200 active:border-b-0 active:translate-y-1 transition">7</button>
+          <button onclick="pressDigit(8)" class="h-11 sm:h-12 bg-white hover:bg-sky-100 active:bg-sky-200 text-sky-900 text-2xl font-bold rounded-xl shadow-md border-b-4 border-slate-200 active:border-b-0 active:translate-y-1 transition">8</button>
+          <button onclick="pressDigit(9)" class="h-11 sm:h-12 bg-white hover:bg-sky-100 active:bg-sky-200 text-sky-900 text-2xl font-bold rounded-xl shadow-md border-b-4 border-slate-200 active:border-b-0 active:translate-y-1 transition">9</button>
+          <button onclick="pressDigit(0)" class="h-11 sm:h-12 bg-white hover:bg-sky-100 active:bg-sky-200 text-sky-900 text-2xl font-bold rounded-xl shadow-md border-b-4 border-slate-200 active:border-b-0 active:translate-y-1 transition">0</button>
+        </div>
+        <div class="mt-2 flex justify-end">
+          <button onclick="pressBackspace()" class="px-4 py-2 bg-rose-100 hover:bg-rose-200 active:bg-rose-300 text-rose-700 text-sm font-bold rounded-xl border border-rose-200 flex items-center space-x-1 shadow-sm transition">
+            <i class="fa-solid fa-backspace"></i>
+            <span>清除</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Submit Answer Button -->
+      <div class="w-full flex justify-end">
+        <button onclick="checkAnswer()" class="w-full px-8 py-3.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-extrabold text-xl rounded-2xl shadow-lg border-b-4 border-emerald-700 active:border-b-0 active:translate-y-1 transition-all flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-check-circle text-2xl"></i>
+          <span>提交答案</span>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN: Interactive Hand Gesture Helper (NO NUMBERS DISPLAYED) -->
+    <section class="md:col-span-6 bg-white rounded-3xl shadow-xl border-4 border-amber-200 p-5 flex flex-col items-center justify-between relative min-h-[440px]">
+      
+      <!-- Panel Header -->
+      <div class="w-full flex items-center justify-between pb-2 border-b-2 border-slate-100">
+        <div class="flex items-center space-x-2">
+          <span class="text-2xl">✋</span>
+          <h2 class="text-lg font-black text-amber-800">手勢順數小助手</h2>
+        </div>
+        <span id="gesture-tag" class="text-xs bg-amber-100 text-amber-800 font-bold px-3 py-1 rounded-full border border-amber-300">
+          準備就緒
+        </span>
+      </div>
+
+      <!-- Default State View (When no digit is tapped yet) -->
+      <div id="gesture-default-view" class="my-auto flex flex-col items-center text-center p-6 space-y-4">
+        <div class="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center border-4 border-amber-200 text-5xl shadow-sm animate-pulse">
+          💡
+        </div>
+        <div class="space-y-1">
+          <p class="text-sky-900 font-extrabold text-lg sm:text-xl">按左邊直式上的數字</p>
+          <p class="text-slate-500 text-sm font-bold">小助手會顯示手指，幫你進行順數！</p>
+        </div>
+      </div>
+
+      <!-- Active Gesture Workspace (Shown when digit tapped) -->
+      <div id="gesture-active-view" class="w-full flex flex-col items-center justify-between flex-grow my-auto py-2 hidden">
+        
+        <!-- Status Banner (No Numbers Displayed) -->
+        <div class="text-center space-y-1 mb-1">
+          <div id="gesture-step-info" class="text-base sm:text-lg font-extrabold text-sky-900">
+            點擊手指進行順數
+          </div>
+          <div id="gesture-count-bubble" class="inline-block bg-amber-50 text-amber-900 font-bold text-sm sm:text-base px-4 py-1 rounded-full border border-amber-200 shadow-sm">
+            按手指順數加法
+          </div>
+        </div>
+
+        <!-- Dynamic Vector Hand SVG Display Container (Left Thumb Left, Right Thumb Right) -->
+        <div id="hand-svg-container" onclick="handleHandTap()" class="my-2 flex items-center justify-center cursor-pointer select-none transition-transform active:scale-95" title="按一下手指頭進行順數">
+          <!-- Dynamic Elongated Hand SVG injected here -->
+        </div>
+
+        <!-- Tap Instruction Hint -->
+        <div id="gesture-hint-text" class="text-center font-black text-amber-600 text-sm sm:text-base animate-bounce">
+          👇 點擊手指頭，繼續順數！
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Footer Info -->
+  <footer class="mt-3 text-center text-xs text-sky-700/70 font-bold">
+    小學一年級數學直式加法練習 (不用進位 • iPad 9 雙欄支援)
+  </footer>
+
+  <!-- 1. SUCCESS MODAL POPUP -->
+  <div id="success-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl transform transition-all scale-100 border-4 border-emerald-100 flex flex-col items-center">
+      
+      <!-- Party Popper Icon SVG -->
+      <div class="mb-4 relative">
+        <svg class="w-20 h-20 mx-auto" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M25 75 L45 35 L65 55 Z" fill="#FBBF24" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M25 75 L35 85 L45 75 Z" fill="#F59E0B" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M48 30 Q52 15 65 20" stroke="#0284C7" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <path d="M55 40 Q70 35 75 48" stroke="#EC4899" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <circle cx="70" cy="25" r="4" fill="#10B981"/>
+          <circle cx="50" cy="18" r="3" fill="#F43F5E"/>
+          <circle cx="80" cy="38" r="3.5" fill="#8B5CF6"/>
+          <circle cx="42" cy="38" r="2.5" fill="#0284C7"/>
+        </svg>
+      </div>
+      <!-- Praise Text -->
+      <h2 class="text-2xl sm:text-3xl font-black text-[#42C828] mb-6 leading-relaxed tracking-wide">
+        你好勁啊！數啱咗喇！！
+      </h2>
+      <!-- Cyan Next Question Button (下一題) -->
+      <button onclick="nextQuestion()" class="w-full py-3.5 px-6 bg-[#38C7EC] hover:bg-[#2ab6da] active:bg-[#1fa1c3] text-white text-xl font-bold rounded-2xl shadow-md border-b-4 border-[#229cb9] active:border-b-0 active:translate-y-1 transition-all">
+        下一題
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. WRONG ANSWER / TRY AGAIN MODAL POPUP -->
+  <div id="wrong-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl transform transition-all scale-100 border-4 border-rose-100 flex flex-col items-center">
+      
+      <!-- Biceps Muscle Icon SVG -->
+      <div class="mb-4">
+        <svg class="w-20 h-20 mx-auto drop-shadow-sm" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M30 65 Q25 45 40 30 Q55 20 65 35 Q75 48 60 62 Q50 72 38 72 Z" fill="#FBBF24" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
+          <path d="M40 30 Q48 18 60 22 Q72 28 65 35" fill="#FBBF24" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
+          <path d="M45 45 Q55 42 58 52" stroke="#D97706" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+        </svg>
+      </div>
+      <!-- Encouragement Text -->
+      <h2 class="text-2xl sm:text-3xl font-black text-[#FF5252] mb-6 leading-relaxed tracking-wide">
+        計錯左!!唔緊要，再計過啦!
+      </h2>
+      <!-- Cyan Try Again Button -->
+      <button onclick="retryCurrentQuestion()" class="w-full py-3.5 px-6 bg-[#38C7EC] hover:bg-[#2ab6da] active:bg-[#1fa1c3] text-white text-xl font-bold rounded-2xl shadow-md border-b-4 border-[#229cb9] active:border-b-0 active:translate-y-1 transition-all">
+        再試一次
+      </button>
+    </div>
+  </div>
+
+  <!-- JavaScript Program Logic -->
+  <script>
+    // State Variables
+    let currentT1 = 0, currentU1 = 0;
+    let currentT2 = 0, currentU2 = 0;
+    let activeBox = 'units'; // 'units' or 'tens'
+    let inputTens = '';
+    let inputUnits = '';
+    let score = 0;
+
+    // Hand Gesture Counting State Variables
+    let gestureActive = false;
+    let gestureTargetCol = ''; // 'units' or 'tens'
+    let gestureRemainingCount = 0; // Number of fingers left on hand
+    let gestureBaseVal = 0;        // Starting base number
+    let gestureCurrentSum = 0;     // Current accumulated count
+
+    // Initialization on Window Load
+    window.onload = function() {
+      generateNewQuestion();
+      
+      // Desktop Keyboard Event Listener
+      window.addEventListener('keydown', function(e) {
+        if (e.key >= '0' && e.key <= '9') {
+          pressDigit(parseInt(e.key));
+        } else if (e.key === 'Backspace') {
+          pressBackspace();
+        } else if (e.key === 'Enter') {
+          checkAnswer();
+        } else if (e.key === 'ArrowLeft') {
+          selectBox('tens');
+        } else if (e.key === 'ArrowRight') {
+          selectBox('units');
+        }
+      });
+    };
+
+    /**
+     * Generates a 2-digit non-carrying addition problem.
+     * Ensures: U1 + U2 <= 9 and T1 + T2 <= 9
+     */
+    function generateNewQuestion() {
+      // Units place without carry (0..9)
+      currentU1 = Math.floor(Math.random() * 10);
+      const maxU2 = 9 - currentU1;
+      currentU2 = Math.floor(Math.random() * (maxU2 + 1));
+
+      // Tens place without carry (1..8)
+      currentT1 = Math.floor(Math.random() * 8) + 1;
+      const maxT2 = 9 - currentT1;
+      currentT2 = Math.floor(Math.random() * maxT2) + 1;
+
+      // Render math problem digits
+      document.getElementById('tens-1').innerText = currentT1;
+      document.getElementById('units-1').innerText = currentU1;
+      document.getElementById('tens-2').innerText = currentT2;
+      document.getElementById('units-2').innerText = currentU2;
+
+      // Reset user input fields and hand gesture panel
+      clearInputs();
+      resetGesturePanel();
+    }
+
+    /**
+     * Clear current answer inputs and focus Units box
+     */
+    function clearInputs() {
+      inputTens = '';
+      inputUnits = '';
+      updateInputDisplays();
+      selectBox('units');
+    }
+
+    /**
+     * Select active input box ('tens' or 'units')
+     */
+    function selectBox(boxName) {
+      activeBox = boxName;
+      const boxTens = document.getElementById('box-tens');
+      const boxUnits = document.getElementById('box-units');
+      if (boxName === 'tens') {
+        boxTens.classList.add('active', 'border-sky-400');
+        boxTens.classList.remove('border-gray-300');
+        boxUnits.classList.remove('active', 'border-sky-400');
+        boxUnits.classList.add('border-gray-300');
+      } else {
+        boxUnits.classList.add('active', 'border-sky-400');
+        boxUnits.classList.remove('border-gray-300');
+        boxTens.classList.remove('active', 'border-sky-400');
+        boxTens.classList.add('border-gray-300');
+      }
+    }
+
+    /**
+     * Numpad Digit Press Handler
+     */
+    function pressDigit(num) {
+      if (activeBox === 'units') {
+        inputUnits = num.toString();
+        if (inputTens === '') {
+          selectBox('tens');
+        }
+      } else if (activeBox === 'tens') {
+        inputTens = num.toString();
+      }
+      updateInputDisplays();
+    }
+
+    /**
+     * Backspace / Clear current box
+     */
+    function pressBackspace() {
+      if (activeBox === 'tens') {
+        if (inputTens !== '') {
+          inputTens = '';
+        } else {
+          selectBox('units');
+        }
+      } else if (activeBox === 'units') {
+        inputUnits = '';
+      }
+      updateInputDisplays();
+    }
+
+    /**
+     * Update DOM text elements for input digits
+     */
+    function updateInputDisplays() {
+      document.getElementById('text-tens').innerText = inputTens;
+      document.getElementById('text-units').innerText = inputUnits;
+    }
+
+    /**
+     * Click handler when student taps any number in the vertical addition
+     */
+    function handleDigitClick(column, row) {
+      selectBox(column);
+
+      let tappedVal = 0;
+      let otherVal = 0;
+
+      if (column === 'units') {
+        tappedVal = (row === 1) ? currentU1 : currentU2;
+        otherVal  = (row === 1) ? currentU2 : currentU1;
+      } else {
+        tappedVal = (row === 1) ? currentT1 : currentT2;
+        otherVal  = (row === 1) ? currentT2 : currentT1;
+      }
+
+      startHandGesture(column, tappedVal, otherVal);
+    }
+
+    /**
+     * Initializes the Hand Gesture Helper on the Right Panel (NO NUMBERS VISIBLE)
+     */
+    function startHandGesture(column, tappedDigit, baseDigit) {
+      gestureActive = true;
+      gestureTargetCol = column;
+      gestureRemainingCount = tappedDigit;
+      gestureBaseVal = baseDigit;
+      gestureCurrentSum = baseDigit;
+
+      const defaultView = document.getElementById('gesture-default-view');
+      const activeView = document.getElementById('gesture-active-view');
+      const tag = document.getElementById('gesture-tag');
+
+      defaultView.classList.add('hidden');
+      activeView.classList.remove('hidden');
+
+      const colName = (column === 'units') ? '個位' : '十位';
+      tag.innerText = `${colName}順數`;
+
+      // If tapped digit is 0
+      if (gestureRemainingCount === 0) {
+        document.getElementById('gesture-step-info').innerText = `不需要按手指`;
+        document.getElementById('gesture-count-bubble').innerText = `請在左邊填寫答案`;
+        document.getElementById('hand-svg-container').innerHTML = `
+          <div class="text-center py-6 font-black text-2xl text-emerald-600">
+            👌 不需要順數，請在左邊輸入答案！
+          </div>
+        `;
+        document.getElementById('gesture-hint-text').innerText = '請在左邊數字盤輸入答案';
+
+        setTimeout(() => {
+          resetGesturePanel();
+        }, 2200);
+        return;
+      }
+
+      // Render Active View
+      updateGestureUI(false);
+    }
+
+    /**
+     * Handles student tapping on the hand gesture SVG area
+     */
+    function handleHandTap() {
+      if (!gestureActive || gestureRemainingCount <= 0) return;
+
+      // Decrement finger count, increment total sum
+      gestureRemainingCount--;
+      gestureCurrentSum++;
+
+      // Play pop sound & Speak current forward count value in Cantonese
+      playPopSound();
+      speakCantonese(`${gestureCurrentSum}`);
+
+      // Animate Container
+      const handContainer = document.getElementById('hand-svg-container');
+      handContainer.classList.add('tap-animate');
+      setTimeout(() => handContainer.classList.remove('tap-animate'), 180);
+
+      // Check if finished
+      if (gestureRemainingCount === 0) {
+        updateGestureUI(true);
+
+        // Hide gesture panel after completion prompt
+        setTimeout(() => {
+          resetGesturePanel();
+        }, 2500);
+      } else {
+        updateGestureUI(false);
+      }
+    }
+
+    /**
+     * Updates SVG graphics & Right Panel UI (No numbers on right side)
+     */
+    function updateGestureUI(isFinished = false) {
+      const stepInfo = document.getElementById('gesture-step-info');
+      const countBubble = document.getElementById('gesture-count-bubble');
+      const hintText = document.getElementById('gesture-hint-text');
+      const container = document.getElementById('hand-svg-container');
+
+      if (isFinished) {
+        stepInfo.innerText = `🎉 數完喇！`;
+        countBubble.innerText = `請在左邊鍵盤輸入答案！`;
+        hintText.innerText = `請點擊左邊數字盤填寫答案`;
+      } else {
+        stepInfo.innerText = `點擊手指進行順數`;
+        countBubble.innerText = `按手指進行加法順數`;
+        hintText.innerText = `👇 點擊手指頭，繼續順數！`;
+      }
+
+      container.innerHTML = generateHandSVG(gestureRemainingCount);
+    }
+
+    /**
+     * Reset Gesture Panel to Default State
+     */
+    function resetGesturePanel() {
+      gestureActive = false;
+      document.getElementById('gesture-default-view').classList.remove('hidden');
+      document.getElementById('gesture-active-view').classList.add('hidden');
+      document.getElementById('gesture-tag').innerText = '準備就緒';
+    }
+
+    /**
+     * Dynamic Vector Hand SVG Generator
+     * Left Hand: Thumb is on the LEFT side.
+     * Right Hand: Thumb is on the RIGHT side.
+     */
+    function generateHandSVG(num) {
+      if (num <= 0) {
+        return `
+          <div class="text-center py-6 font-black text-2xl text-emerald-600 animate-bounce">
+            ✅ 順數完成！請輸入答案！
+          </div>
+        `;
+      }
+
+      /**
+       * Renders a single hand.
+       * @param {number} fingers - Number of active raised fingers (1..5)
+       * @param {boolean} isRightHand - If false: Left Hand (Thumb on Left). If true: Right Hand (Thumb on Right).
+       */
+      function renderSingleHand(fingers, isRightHand = false) {
+        const thumbRaised = (fingers === 5);
+        const indexRaised = (fingers >= 1);
+        const middleRaised = (fingers >= 2);
+        const ringRaised = (fingers >= 3);
+        const pinkyRaised = (fingers >= 4);
+
+        // Left hand has thumb on LEFT side (unflipped).
+        // Right hand has thumb on RIGHT side (flipped horizontally).
+        const transform = isRightHand ? 'transform="scale(-1, 1) translate(-170, 0)"' : '';
+
+        return `
+          <g ${transform}>
+            <!-- Wrist -->
+            <path d="M 50 195 L 50 260 C 50 265 120 265 120 260 L 120 195 Z" fill="#FED7AA" stroke="#EA580C" stroke-width="4" stroke-linejoin="round"/>
+            <!-- Palm -->
+            <path d="M 35 125 C 35 105 50 100 60 100 L 115 100 C 125 100 135 105 135 125 L 130 200 C 130 210 40 210 40 200 Z" fill="#FDBA74" stroke="#EA580C" stroke-width="4" stroke-linejoin="round"/>
+            
+            <!-- Thumb (Drawn on LEFT side of base vector) -->
+            ${thumbRaised ? 
+              `<path d="M 40 145 C 10 130 5 90 22 75 C 38 65 52 90 55 125 Z" fill="#FDBA74" stroke="#EA580C" stroke-width="4" stroke-linejoin="round"/>` :
+              `<path d="M 40 150 C 25 155 35 175 55 165 Z" fill="#FB923C" stroke="#EA580C" stroke-width="4" stroke-linejoin="round"/>`
+            }
+
+            <!-- Index Finger (Extra Long) -->
+            ${indexRaised ?
+              `<rect x="46" y="8" width="22" height="108" rx="11" fill="#FDBA74" stroke="#EA580C" stroke-width="4"/>` :
+              `<rect x="46" y="75" width="22" height="40" rx="11" fill="#FB923C" stroke="#EA580C" stroke-width="4"/>`
+            }
+
+            <!-- Middle Finger (Extra Long) -->
+            ${middleRaised ?
+              `<rect x="71" y="0" width="22" height="116" rx="11" fill="#FDBA74" stroke="#EA580C" stroke-width="4"/>` :
+              `<rect x="71" y="75" width="22" height="40" rx="11" fill="#FB923C" stroke="#EA580C" stroke-width="4"/>`
+            }
+
+            <!-- Ring Finger (Extra Long) -->
+            ${ringRaised ?
+              `<rect x="96" y="8" width="22" height="108" rx="11" fill="#FDBA74" stroke="#EA580C" stroke-width="4"/>` :
+              `<rect x="96" y="75" width="22" height="40" rx="11" fill="#FB923C" stroke="#EA580C" stroke-width="4"/>`
+            }
+
+            <!-- Pinky Finger (Elongated) -->
+            ${pinkyRaised ?
+              `<rect x="121" y="28" width="20" height="88" rx="10" fill="#FDBA74" stroke="#EA580C" stroke-width="4"/>` :
+              `<rect x="121" y="75" width="20" height="40" rx="10" fill="#FB923C" stroke="#EA580C" stroke-width="4"/>`
+            }
+          </g>
+        `;
+      }
+
+      if (num <= 5) {
+        // Single Left Hand (Thumb on LEFT)
+        return `
+          <svg class="w-48 h-56 sm:w-56 sm:h-64 drop-shadow-md" viewBox="0 0 170 270" fill="none" xmlns="http://www.w3.org/2000/svg">
+            ${renderSingleHand(num, false)}
+          </svg>
+        `;
+      } else {
+        // 6 to 9: Two hands
+        // Left hand (Left side) = 5 fingers (Thumb on LEFT)
+        // Right hand (Right side) = remaining fingers (Thumb on RIGHT)
+        const rightFingers = num - 5;
+        return `
+          <svg class="w-72 h-56 sm:w-84 sm:h-64 drop-shadow-md" viewBox="0 0 340 270" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Left Hand (Thumb Left) -->
+            <g transform="translate(0, 0)">
+              ${renderSingleHand(5, false)}
+            </g>
+            <!-- Right Hand (Thumb Right) -->
+            <g transform="translate(170, 0)">
+              ${renderSingleHand(rightFingers, true)}
+            </g>
+          </svg>
+        `;
+      }
+    }
+
+    /**
+     * Submit and Verify Final Answer
+     */
+    function checkAnswer() {
+      if (inputTens === '' || inputUnits === '') {
+        const container = document.querySelector('main');
+        container.classList.add('shake');
+        setTimeout(() => container.classList.remove('shake'), 400);
+        return;
+      }
+
+      const expectedTens = currentT1 + currentT2;
+      const expectedUnits = currentU1 + currentU2;
+      const userTens = parseInt(inputTens, 10);
+      const userUnits = parseInt(inputUnits, 10);
+
+      if (userTens === expectedTens && userUnits === expectedUnits) {
+        // Correct Answer
+        score++;
+        document.getElementById('score-count').innerText = `答對: ${score}`;
+        playVictorySound();
+        speakCantonese("你好勁啊！數啱咗喇！！");
+        triggerConfetti();
+        document.getElementById('success-modal').classList.remove('hidden');
+      } else {
+        // Wrong Answer
+        playTryAgainSound();
+        speakCantonese("計錯左!!唔緊要，再計過啦!");
+        document.getElementById('wrong-modal').classList.remove('hidden');
+      }
+    }
+
+    /**
+     * Next Question Handler
+     */
+    function nextQuestion() {
+      document.getElementById('success-modal').classList.add('hidden');
+      generateNewQuestion();
+    }
+
+    /**
+     * Retry Current Question Handler
+     */
+    function retryCurrentQuestion() {
+      document.getElementById('wrong-modal').classList.add('hidden');
+      clearInputs();
+    }
+
+    /**
+     * Cantonese Web Speech Synthesis API
+     */
+    function speakCantonese(phrase) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Interrupt previous speech
+        const utterance = new SpeechSynthesisUtterance(phrase);
+        utterance.lang = 'zh-HK';
+        
+        const voices = window.speechSynthesis.getVoices();
+        const cantVoice = voices.find(v => 
+          v.lang === 'zh-HK' || 
+          v.lang === 'yue-HK' || 
+          v.lang.includes('HK') || 
+          v.name.includes('Hong Kong') || 
+          v.name.includes('Cantonese')
+        );
+        if (cantVoice) {
+          utterance.voice = cantVoice;
+        }
+
+        utterance.pitch = 1.1;
+        utterance.rate = 0.95;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    // Pre-load voices for Speech Synthesis
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = function() {
+        window.speechSynthesis.getVoices();
+      };
+    }
+
+    /**
+     * Web Audio API: Pop Sound when tapping hand gesture
+     */
+    function playPopSound() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.08);
+
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.09);
+      } catch (e) {
+        console.log("Audio error:", e);
+      }
+    }
+
+    /**
+     * Web Audio API: Victory Fanfare Sound
+     */
+    function playVictorySound() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const now = ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+          gain.gain.setValueAtTime(0.25, now + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.3);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + idx * 0.08);
+          osc.stop(now + idx * 0.08 + 0.35);
+        });
+      } catch (e) {
+        console.log("Audio error:", e);
+      }
+    }
+
+    /**
+     * Web Audio API: Try Again Sound
+     */
+    function playTryAgainSound() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const now = ctx.currentTime;
+        const notes = [392.00, 329.63]; // G4, E4
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.15);
+          gain.gain.setValueAtTime(0.2, now + idx * 0.15);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.15 + 0.25);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + idx * 0.15);
+          osc.stop(now + idx * 0.15 + 0.3);
+        });
+      } catch (e) {
+        console.log("Audio error:", e);
+      }
+    }
+
+    /**
+     * Confetti Particle Effect
+     */
+    function triggerConfetti() {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 65,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      }
+    }
+  </script>
+</body>
+</html>
